@@ -11,11 +11,11 @@ from pathlib import Path
 class Config:
     """Agent configuration settings."""
     
-    # Server connection - use ws:// not wss:// for local testing
-    SERVER_URL = os.environ.get('AUTONOVA_SERVER', 'http://localhost:8000')
+    # Server connection - PRODUCTION URL
+    SERVER_URL = os.environ.get('AUTONOVA_SERVER', 'https://autonova-rmm.onrender.com')
     
     # Encryption key (MUST match server's ENCRYPTION_KEY)
-    ENCRYPTION_KEY = os.environ.get('AUTONOVA_KEY', 'autonova-rmm-default-key-change-in-production')
+    ENCRYPTION_KEY = os.environ.get('AUTONOVA_KEY', 'autonova-rmm-production-key-12345')
     
     # Agent identification
     AGENT_ID = None  # Generated or loaded on startup
