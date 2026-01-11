@@ -1,0 +1,31 @@
+services:
+  # Backend API + WebSocket Server
+  - type: web
+    name: autonova-api
+    runtime: python
+    rootDir: cloud_server
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:socket_app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        sync: false
+      - key: DATABASE_URL
+        value: sqlite:///./autonova.db
+
+  # Frontend Admin Dashboard
+  - type: web
+    name: autonova-admin
+    runtime: static
+    rootDir: admin_pwa
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: autonova-api
+          type: web
+          property: hostport

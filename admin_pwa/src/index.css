@@ -1,0 +1,164 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Safe area for notched phones */
+  --sat: env(safe-area-inset-top);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+  --sar: env(safe-area-inset-right);
+}
+
+body {
+  @apply bg-dark-900 text-gray-100 min-h-screen;
+  /* Prevent pull-to-refresh on mobile */
+  overscroll-behavior-y: contain;
+  /* Touch optimization */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Custom scrollbar - hide on mobile */
+@media (min-width: 640px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-dark-600 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-dark-700;
+  }
+}
+
+/* Hide scrollbar on mobile */
+@media (max-width: 639px) {
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  body {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Glass effect */
+.glass {
+  @apply bg-white/5 backdrop-blur-xl border border-white/10;
+}
+
+/* Status indicators */
+.status-online {
+  @apply bg-emerald-500 shadow-lg shadow-emerald-500/50;
+}
+
+.status-offline {
+  @apply bg-gray-500;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Terminal output style - responsive */
+.terminal-output {
+  @apply font-mono text-xs sm:text-sm bg-black/50 p-3 sm:p-4 rounded-lg overflow-x-auto;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+@media (min-width: 640px) {
+  .terminal-output {
+    max-height: 400px;
+  }
+}
+
+.terminal-output pre {
+  @apply text-emerald-400 whitespace-pre-wrap;
+}
+
+/* Card hover effect - disable on touch devices */
+@media (hover: hover) {
+  .card-hover {
+    @apply transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-primary-500/10;
+  }
+}
+
+/* Button styles - larger touch targets on mobile */
+.btn-primary {
+  @apply px-4 py-2 sm:py-2 bg-primary-600 hover:bg-primary-700 rounded-lg font-medium transition-all duration-200;
+  @apply active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  min-height: 44px;
+  /* Minimum touch target size */
+}
+
+.btn-danger {
+  @apply px-4 py-2 sm:py-2 bg-red-600 hover:bg-red-700 rounded-lg font-medium transition-all duration-200;
+  @apply active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  min-height: 44px;
+}
+
+.btn-ghost {
+  @apply px-4 py-2 hover:bg-white/10 rounded-lg font-medium transition-all duration-200;
+  @apply active:scale-95;
+  min-height: 44px;
+}
+
+/* Mobile-friendly spacing */
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+}
+
+/* Prevent text selection on buttons (mobile) */
+button {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Loading spinner for mobile */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  @apply w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full;
+  animation: spin 0.8s linear infinite;
+}
