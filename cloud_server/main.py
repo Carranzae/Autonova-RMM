@@ -14,6 +14,16 @@ from api.commands import router as commands_router
 from sockets.agent_socket import AgentNamespace
 from database.models import init_db
 
+# Allowed origins for CORS
+ALLOWED_ORIGINS = [
+    "https://autonova-rmm.netlify.app",
+    "https://autonova-rmm.onrender.com",
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:3000",
+    "*"  # Allow all for WebSocket connections
+]
+
 # Create FastAPI app
 app = FastAPI(
     title="Autonova RMM Server",
@@ -24,18 +34,20 @@ app = FastAPI(
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure for production
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Create Socket.IO server
+# Create Socket.IO server with production settings
 sio = socketio.AsyncServer(
     async_mode='asgi',
     cors_allowed_origins='*',
-    logger=False,
-    engineio_logger=False
+    logger=True,
+    engineio_logger=False,
+    ping_timeout=60,
+    ping_interval=25,
 )
 
 # Create ASGI app combining FastAPI and Socket.IO
