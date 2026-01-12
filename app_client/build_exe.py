@@ -6,13 +6,14 @@ Creates a standalone .exe for the Windows agent.
 import os
 import sys
 import subprocess
+import shutil
 from pathlib import Path
 
 # Configuration
 APP_NAME = "AutonovaAgent"
 ICON_PATH = None  # Add path to .ico file if you have one
 ONE_FILE = True
-CONSOLE = False  # Set to True for debugging
+CONSOLE = True  # Set to True for debugging, False for production
 
 def build():
     """Build the executable using PyInstaller."""
@@ -33,6 +34,12 @@ def build():
         print("[!] PyInstaller not found. Installing...")
         subprocess.check_call([sys.executable, "-m", "pip", "install", "pyinstaller"])
     
+    # Clean previous builds
+    for folder in ['build', 'dist']:
+        if Path(folder).exists():
+            shutil.rmtree(folder)
+            print(f"[✓] Cleaned {folder}/")
+    
     # Build command
     cmd = [
         sys.executable, "-m", "PyInstaller",
@@ -44,10 +51,10 @@ def build():
     if ONE_FILE:
         cmd.append("--onefile")
     
-    if not CONSOLE:
-        cmd.append("--noconsole")
-    else:
+    if CONSOLE:
         cmd.append("--console")
+    else:
+        cmd.append("--noconsole")
     
     if ICON_PATH and Path(ICON_PATH).exists():
         cmd.extend(["--icon", ICON_PATH])
@@ -63,21 +70,32 @@ def build():
         "asyncio",
         "json",
         "logging",
+        "Crypto",
+        "Crypto.Cipher",
+        "Crypto.Cipher.AES",
+        "Crypto.Random",
+        "engineio",
+        "engineio.async_drivers",
+        "engineio.async_drivers.aiohttp",
     ]
     
     for imp in hidden_imports:
         cmd.extend(["--hidden-import", imp])
     
-    # Add data files
+    # Add data files - include entire src directory
     cmd.extend([
-        "--add-data", ".env;.",
+        "--add-data", "src;src",
     ])
+    
+    # Check for .env file
+    if Path(".env").exists():
+        cmd.extend(["--add-data", ".env;."])
     
     # Entry point
     cmd.append("run_agent.py")
     
     print("\n[*] Building executable...")
-    print(f"    Command: {' '.join(cmd)}\n")
+    print(f"    Command: {' '.join(cmd[:10])}...\n")
     
     # Run PyInstaller
     result = subprocess.run(cmd, capture_output=False)
@@ -91,6 +109,7 @@ def build():
             print(f"  [✓] Executable: {exe_path}")
             print(f"  [✓] Size: {size_mb:.1f} MB")
             print("=" * 50)
+            print("\nTo run: double-click the .exe or run from command line")
         else:
             print("\n[!] Build completed but executable not found")
     else:
