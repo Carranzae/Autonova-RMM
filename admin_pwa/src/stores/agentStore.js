@@ -2,7 +2,10 @@ import { create } from 'zustand'
 import { io } from 'socket.io-client'
 import axios from 'axios'
 
-const API_URL = '/api'
+// Production: Use Render URL, Development: Use proxy
+const API_BASE = import.meta.env.VITE_API_URL || ''
+const API_URL = `${API_BASE}/api`
+const SOCKET_URL = API_BASE || window.location.origin
 
 export const useAgentStore = create((set, get) => ({
     // State
@@ -21,13 +24,15 @@ export const useAgentStore = create((set, get) => ({
         const existingSocket = get().socket
         if (existingSocket?.connected) return
 
-        const socket = io('/', {
+        console.log('Connecting to socket:', SOCKET_URL)
+
+        const socket = io(SOCKET_URL, {
             path: '/socket.io',
             transports: ['websocket', 'polling'],
-            reconnectionAttempts: 5,
+            reconnectionAttempts: 10,
             reconnectionDelay: 2000,
             reconnectionDelayMax: 10000,
-            timeout: 5000
+            timeout: 10000
         })
 
         socket.on('connect', () => {
