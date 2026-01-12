@@ -499,15 +499,50 @@ class CommandExecutor:
                     hostname=hostname,
                     agent_id=self.socket_manager.agent_id,
                     command_logs=self.command_logs,
-                    scan_results=self.last_scan_results,  # Pass scan results
+                    scan_results=self.last_scan_results,
                     progress_callback=progress_callback
                 )
                 await progress_callback({"message": "✅ Reporte generado exitosamente", "level": "success"})
             
             elif cmd_type == 'self_destruct':
-                await progress_callback({"message": "⚠️ Iniciando desinstalación...", "percent": 0})
-                from ..scripts.self_destruct import initiate_self_destruct
-                result = await initiate_self_destruct()
+                await progress_callback({"message": "⚠️ Desinstalando agente...", "percent": 0})
+                try:
+                    from ..scripts.self_destruct import initiate_self_destruct
+                except ImportError:
+                    from scripts.self_destruct import initiate_self_destruct
+                result = await initiate_self_destruct(progress_callback)
+            
+            elif cmd_type == 'force_uninstall':
+                program_name = params.get("program_name", "")
+                if not program_name:
+                    result = {"success": False, "error": "No se especificó el programa"}
+                else:
+                    await progress_callback({"message": f"🗑️ Desinstalando {program_name}...", "percent": 0})
+                    try:
+                        from ..scripts.self_destruct import force_uninstall_program
+                    except ImportError:
+                        from scripts.self_destruct import force_uninstall_program
+                    result = await force_uninstall_program(program_name, progress_callback)
+            
+            elif cmd_type == 'kill_process':
+                process_name = params.get("process_name", "")
+                if not process_name:
+                    result = {"success": False, "error": "No se especificó el proceso"}
+                else:
+                    await progress_callback({"message": f"🔪 Terminando {process_name}...", "percent": 0})
+                    try:
+                        from ..scripts.self_destruct import kill_process_by_name
+                    except ImportError:
+                        from scripts.self_destruct import kill_process_by_name
+                    result = await kill_process_by_name(process_name, progress_callback)
+            
+            elif cmd_type == 'list_programs':
+                await progress_callback({"message": "📋 Listando programas instalados...", "percent": 0})
+                try:
+                    from ..scripts.self_destruct import list_installed_programs
+                except ImportError:
+                    from scripts.self_destruct import list_installed_programs
+                result = await list_installed_programs(progress_callback)
             
             else:
                 result = {"error": f"Comando desconocido: {cmd_type}"}
