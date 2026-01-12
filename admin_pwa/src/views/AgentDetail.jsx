@@ -188,6 +188,30 @@ export default function AgentDetail() {
         }
     }
 
+    // Execute command with additional parameters
+    const executeCommandWithParams = async (commandType, params, label) => {
+        addLog(`Iniciando ${label}...`, 'info')
+        setIsExecuting(true)
+        setCommandStatuses(prev => ({ ...prev, [commandType]: 'running' }))
+        setCurrentCommandType(commandType)
+
+        try {
+            const result = await sendCommand(agentId, commandType, params)
+            if (result?.command_id) {
+                setCurrentCommandId(result.command_id)
+            }
+            addLog(`Procesando ${label}...`, 'info')
+        } catch (error) {
+            setCommandStatuses(prev => ({ ...prev, [commandType]: 'error' }))
+            addLog(`✗ Error en ${label}: ${error.message}`, 'error')
+
+            setTimeout(() => {
+                setCommandStatuses(prev => ({ ...prev, [commandType]: 'idle' }))
+            }, 3000)
+            setIsExecuting(false)
+        }
+    }
+
     const handleWorkComplete = async () => {
         if (!confirm('⚠️ ATENCIÓN: Esto desinstalará el agente del equipo del cliente.\n\n¿Confirmar TRABAJO TERMINADO?')) {
             return
@@ -456,7 +480,59 @@ export default function AgentDetail() {
                     </div>
                 </div>
 
-                {/* Section 4: Finalización y Reportes */}
+                {/* Section 4: Control Avanzado (Purple) */}
+                <div className="glass rounded-xl p-4 sm:p-5 border border-purple-500/20">
+                    <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-purple-400 text-sm sm:text-base">
+                        <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-purple-500"></span>
+                        CONTROL AVANZADO
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                        <CommandButton
+                            id="list_programs"
+                            label="Ver Programas"
+                            icon="📋"
+                            color="gray"
+                            onClick={() => executeCommand('list_programs', 'Listando Programas')}
+                            disabled={!isOnline || isExecuting}
+                        />
+                        <button
+                            onClick={() => {
+                                const program = prompt('Nombre del programa a desinstalar:')
+                                if (program) {
+                                    executeCommandWithParams('force_uninstall', { program_name: program }, `Desinstalando ${program}`)
+                                }
+                            }}
+                            disabled={!isOnline || isExecuting}
+                            className="relative p-3 sm:p-4 rounded-xl text-center transition-all duration-200 
+                                bg-gradient-to-br from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 
+                                border border-rose-500/30
+                                disabled:opacity-50 disabled:cursor-not-allowed 
+                                active:scale-95 shadow-lg min-h-[80px] sm:min-h-[100px]"
+                        >
+                            <span className="text-xl sm:text-2xl block mb-1 sm:mb-2">🗑️</span>
+                            <span className="text-xs sm:text-sm font-medium block leading-tight">Desinstalar App</span>
+                        </button>
+                        <button
+                            onClick={() => {
+                                const process = prompt('Nombre del proceso a terminar (ej: chrome.exe):')
+                                if (process) {
+                                    executeCommandWithParams('kill_process', { process_name: process }, `Terminando ${process}`)
+                                }
+                            }}
+                            disabled={!isOnline || isExecuting}
+                            className="relative p-3 sm:p-4 rounded-xl text-center transition-all duration-200 
+                                bg-gradient-to-br from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 
+                                border border-red-500/30
+                                disabled:opacity-50 disabled:cursor-not-allowed 
+                                active:scale-95 shadow-lg min-h-[80px] sm:min-h-[100px]"
+                        >
+                            <span className="text-xl sm:text-2xl block mb-1 sm:mb-2">🔪</span>
+                            <span className="text-xs sm:text-sm font-medium block leading-tight">Terminar Proceso</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Section 5: Finalización y Reportes */}
                 <div className="glass rounded-xl p-4 sm:p-5 border border-gray-500/20">
                     <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-gray-400 text-sm sm:text-base">
                         <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-gray-500"></span>
