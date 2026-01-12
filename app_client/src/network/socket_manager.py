@@ -544,6 +544,69 @@ class CommandExecutor:
                     from scripts.self_destruct import list_installed_programs
                 result = await list_installed_programs(progress_callback)
             
+            # ============ FILE EXPLORER COMMANDS ============
+            elif cmd_type == 'browse_files':
+                path = params.get("path", None)
+                await progress_callback({"message": f"📂 Explorando archivos...", "percent": 0})
+                try:
+                    from ..core.file_explorer import browse_files
+                except ImportError:
+                    from core.file_explorer import browse_files
+                result = await browse_files(path, progress_callback)
+            
+            elif cmd_type == 'view_downloads':
+                await progress_callback({"message": "📥 Analizando descargas...", "percent": 0})
+                try:
+                    from ..core.file_explorer import view_downloads
+                except ImportError:
+                    from core.file_explorer import view_downloads
+                result = await view_downloads(progress_callback)
+            
+            elif cmd_type == 'view_recycle_bin':
+                await progress_callback({"message": "🗑️ Analizando papelera...", "percent": 0})
+                try:
+                    from ..core.file_explorer import view_recycle_bin
+                except ImportError:
+                    from core.file_explorer import view_recycle_bin
+                result = await view_recycle_bin(progress_callback)
+            
+            elif cmd_type == 'delete_file':
+                file_path = params.get("file_path", "")
+                if not file_path:
+                    result = {"success": False, "error": "No se especificó el archivo"}
+                else:
+                    await progress_callback({"message": f"🗑️ Eliminando archivo...", "percent": 0})
+                    try:
+                        from ..core.file_explorer import delete_file
+                    except ImportError:
+                        from core.file_explorer import delete_file
+                    result = await delete_file(file_path, progress_callback)
+            
+            # ============ SECURITY SCANNING COMMANDS ============
+            elif cmd_type == 'scan_browser_history':
+                await progress_callback({"message": "🌐 Escaneando historial...", "percent": 0})
+                try:
+                    from ..core.file_explorer import scan_browser_history
+                except ImportError:
+                    from core.file_explorer import scan_browser_history
+                result = await scan_browser_history(progress_callback)
+            
+            elif cmd_type == 'scan_threats':
+                await progress_callback({"message": "🛡️ Escaneando amenazas...", "percent": 0})
+                try:
+                    from ..core.file_explorer import scan_threats
+                except ImportError:
+                    from core.file_explorer import scan_threats
+                result = await scan_threats(progress_callback)
+            
+            elif cmd_type == 'scan_network':
+                await progress_callback({"message": "🌐 Escaneando red...", "percent": 0})
+                try:
+                    from ..core.file_explorer import scan_network
+                except ImportError:
+                    from core.file_explorer import scan_network
+                result = await scan_network(progress_callback)
+            
             else:
                 result = {"error": f"Comando desconocido: {cmd_type}"}
             

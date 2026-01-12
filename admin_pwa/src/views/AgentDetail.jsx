@@ -532,7 +532,84 @@ export default function AgentDetail() {
                     </div>
                 </div>
 
-                {/* Section 5: Finalización y Reportes */}
+                {/* Section 5: Exploración de Archivos (Cyan) */}
+                <div className="glass rounded-xl p-4 sm:p-5 border border-cyan-500/20">
+                    <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-cyan-400 text-sm sm:text-base">
+                        <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-cyan-500"></span>
+                        EXPLORACIÓN DE ARCHIVOS
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                        <CommandButton
+                            id="view_downloads"
+                            label="Ver Descargas"
+                            icon="📥"
+                            color="blue"
+                            onClick={() => executeCommand('view_downloads', 'Analizando Descargas')}
+                            disabled={!isOnline || isExecuting}
+                        />
+                        <CommandButton
+                            id="view_recycle_bin"
+                            label="Ver Papelera"
+                            icon="🗑️"
+                            color="blue"
+                            onClick={() => executeCommand('view_recycle_bin', 'Analizando Papelera')}
+                            disabled={!isOnline || isExecuting}
+                        />
+                        <button
+                            onClick={() => {
+                                const path = prompt('Ruta a explorar (ej: C:\\Users):', 'C:\\Users')
+                                if (path) {
+                                    executeCommandWithParams('browse_files', { path }, `Explorando ${path}`)
+                                }
+                            }}
+                            disabled={!isOnline || isExecuting}
+                            className="relative p-3 sm:p-4 rounded-xl text-center transition-all duration-200 
+                                bg-gradient-to-br from-cyan-600 to-cyan-700 hover:from-cyan-500 hover:to-cyan-600 
+                                border border-cyan-500/30
+                                disabled:opacity-50 disabled:cursor-not-allowed 
+                                active:scale-95 shadow-lg min-h-[80px] sm:min-h-[100px]"
+                        >
+                            <span className="text-xl sm:text-2xl block mb-1 sm:mb-2">📂</span>
+                            <span className="text-xs sm:text-sm font-medium block leading-tight">Explorar Archivos</span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Section 6: Seguridad y Amenazas (Red/Pink) */}
+                <div className="glass rounded-xl p-4 sm:p-5 border border-pink-500/20">
+                    <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-pink-400 text-sm sm:text-base">
+                        <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-pink-500"></span>
+                        SEGURIDAD Y AMENAZAS
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                        <CommandButton
+                            id="scan_browser_history"
+                            label="Historial Browser"
+                            icon="🌐"
+                            color="orange"
+                            onClick={() => executeCommand('scan_browser_history', 'Escaneando Historial')}
+                            disabled={!isOnline || isExecuting}
+                        />
+                        <CommandButton
+                            id="scan_threats"
+                            label="Escanear Amenazas"
+                            icon="🛡️"
+                            color="red"
+                            onClick={() => executeCommand('scan_threats', 'Escaneando Amenazas')}
+                            disabled={!isOnline || isExecuting}
+                        />
+                        <CommandButton
+                            id="scan_network"
+                            label="Escanear Red"
+                            icon="🔍"
+                            color="red"
+                            onClick={() => executeCommand('scan_network', 'Escaneando Red')}
+                            disabled={!isOnline || isExecuting}
+                        />
+                    </div>
+                </div>
+
+                {/* Section 7: Finalización y Reportes */}
                 <div className="glass rounded-xl p-4 sm:p-5 border border-gray-500/20">
                     <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-gray-400 text-sm sm:text-base">
                         <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-gray-500"></span>
@@ -658,49 +735,51 @@ export default function AgentDetail() {
             </div>
 
             {/* Report Preview Modal */}
-            {showReportModal && lastReport && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <div className="bg-dark-800 rounded-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-white/10">
-                        {/* Modal Header */}
-                        <div className="flex items-center justify-between p-4 border-b border-gray-700">
-                            <div className="flex items-center gap-3">
-                                <span className="text-2xl">📄</span>
-                                <div>
-                                    <h2 className="font-bold text-lg">Reporte de Servicio</h2>
-                                    <p className="text-sm text-gray-400">{selectedAgent?.hostname} - {new Date().toLocaleDateString('es-ES')}</p>
+            {
+                showReportModal && lastReport && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <div className="bg-dark-800 rounded-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-white/10">
+                            {/* Modal Header */}
+                            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                                <div className="flex items-center gap-3">
+                                    <span className="text-2xl">📄</span>
+                                    <div>
+                                        <h2 className="font-bold text-lg">Reporte de Servicio</h2>
+                                        <p className="text-sm text-gray-400">{selectedAgent?.hostname} - {new Date().toLocaleDateString('es-ES')}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={handleDownloadReport}
+                                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
+                                    >
+                                        📥 Descargar
+                                    </button>
+                                    <button
+                                        onClick={() => setShowReportModal(false)}
+                                        className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                                    >
+                                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={handleDownloadReport}
-                                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-medium text-sm transition-colors flex items-center gap-2"
-                                >
-                                    📥 Descargar
-                                </button>
-                                <button
-                                    onClick={() => setShowReportModal(false)}
-                                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                                >
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
+
+                            {/* Report Content */}
+                            <div className="flex-1 overflow-auto bg-white">
+                                <iframe
+                                    srcDoc={lastReport.html}
+                                    title="Reporte"
+                                    className="w-full h-full border-0"
+                                    style={{ minHeight: '100%' }}
+                                />
                             </div>
                         </div>
-
-                        {/* Report Content */}
-                        <div className="flex-1 overflow-auto bg-white">
-                            <iframe
-                                srcDoc={lastReport.html}
-                                title="Reporte"
-                                className="w-full h-full border-0"
-                                style={{ minHeight: '100%' }}
-                            />
-                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     )
 }
 

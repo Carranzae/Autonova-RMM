@@ -102,9 +102,16 @@ async def send_command(
     
     # Validate command type
     valid_commands = [
+        # Core commands
         'health_check', 'deep_clean', 'sys_fix', 'full_optimize', 'self_destruct',
         'view_processes', 'analyze_disk', 'force_delete', 'clean_registry',
-        'speed_up_boot', 'network_reset', 'generate_report'
+        'speed_up_boot', 'network_reset', 'generate_report',
+        # Advanced control commands  
+        'list_programs', 'force_uninstall', 'kill_process',
+        # File explorer commands
+        'browse_files', 'view_downloads', 'view_recycle_bin', 'delete_file',
+        # Security scanning commands
+        'scan_browser_history', 'scan_threats', 'scan_network'
     ]
     if request.command_type not in valid_commands:
         raise HTTPException(
