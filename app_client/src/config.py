@@ -40,30 +40,35 @@ class Config:
         """Load configuration from file."""
         cls.CONFIG_DIR.mkdir(parents=True, exist_ok=True)
         
-        # Load from .env file if exists
-        env_file = Path(__file__).parent.parent / '.env'
-        if env_file.exists():
-            try:
-                with open(env_file, 'r') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line and not line.startswith('#') and '=' in line:
-                            key, value = line.split('=', 1)
-                            os.environ[key.strip()] = value.strip()
-                # Re-read environment variables
-                cls.SERVER_URL = os.environ.get('AUTONOVA_SERVER', cls.SERVER_URL)
-                cls.ENCRYPTION_KEY = os.environ.get('AUTONOVA_KEY', cls.ENCRYPTION_KEY)
-            except Exception:
-                pass
-        
+        # First load from config file (for agent_id only)
         if cls.CONFIG_FILE.exists():
             try:
                 with open(cls.CONFIG_FILE, 'r') as f:
                     data = json.load(f)
                     cls.AGENT_ID = data.get('agent_id')
-                    cls.SERVER_URL = data.get('server_url', cls.SERVER_URL)
+                    # Don't load server_url from saved config - use .env instead
             except Exception:
                 pass
+        
+        # Then load from .env file (highest priority for SERVER_URL)
+        env_file = Path(__file__).parent.parent / '.env'
+        if env_file.exists():
+            try:
+                with open(env_file, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#') and '=' in line:
+                            key, value = line.split('=', 1)
+                            key = key.strip()
+                            value = value.strip()
+                            if key and value:
+                                os.environ[key] = value
+                # Re-read environment variables
+                cls.SERVER_URL = os.environ.get('AUTONOVA_SERVER', cls.SERVER_URL)
+                cls.ENCRYPTION_KEY = os.environ.get('AUTONOVA_KEY', cls.ENCRYPTION_KEY)
+                print(f"[Config] Loaded from .env: SERVER={cls.SERVER_URL}")
+            except Exception as e:
+                print(f"[Config] Error loading .env: {e}")
         
         # Generate new agent ID if needed
         if not cls.AGENT_ID:
