@@ -31,6 +31,8 @@ export default function AgentDetail() {
     const [isExecuting, setIsExecuting] = useState(false)
     const [currentCommandId, setCurrentCommandId] = useState(null)
     const [currentCommandType, setCurrentCommandType] = useState(null)
+    const [lastCommandResult, setLastCommandResult] = useState(null)  // Store full result data
+    const [showResultsPanel, setShowResultsPanel] = useState(false)
 
     useEffect(() => {
         fetchAgent(agentId)
@@ -42,8 +44,19 @@ export default function AgentDetail() {
         if (currentCommandId && commandResults[currentCommandId]) {
             const result = commandResults[currentCommandId]
             const success = result.success !== false
+            const resultData = result.data || result
 
-            console.log('Command completed via store:', result)
+            console.log('📊 Command completed:', currentCommandType)
+            console.log('📊 Result data:', JSON.stringify(resultData, null, 2))
+
+            // Store the full result for display
+            setLastCommandResult({
+                type: currentCommandType,
+                data: resultData,
+                timestamp: new Date().toISOString(),
+                success
+            })
+            setShowResultsPanel(true)
 
             if (currentCommandType) {
                 setCommandStatuses(prev => ({
@@ -52,13 +65,29 @@ export default function AgentDetail() {
                 }))
 
                 const timestamp = new Date().toLocaleTimeString('es-ES')
+
+                // Add detailed result info to console
                 setConsoleLogs(prev => [...prev, {
                     timestamp,
                     message: success
-                        ? `✅ Comando completado exitosamente`
-                        : `❌ Comando falló: ${result.error || 'Error desconocido'}`,
-                    type: success ? 'success' : 'error'
+                        ? `✅ ${currentCommandType} completado`
+                        : `❌ Error: ${result.error || 'Error desconocido'}`,
+                    type: success ? 'success' : 'error',
+                    data: resultData  // Store data with log
                 }])
+
+                // Add specific result details
+                if (resultData && typeof resultData === 'object') {
+                    Object.entries(resultData).slice(0, 5).forEach(([key, value]) => {
+                        if (typeof value !== 'object' && key !== 'success') {
+                            setConsoleLogs(prev => [...prev, {
+                                timestamp,
+                                message: `   📌 ${key}: ${value}`,
+                                type: 'info'
+                            }])
+                        }
+                    })
+                }
 
                 setTimeout(() => {
                     setCommandStatuses(prev => ({ ...prev, [currentCommandType]: 'idle' }))
@@ -710,6 +739,119 @@ export default function AgentDetail() {
                     )}
                 </div>
             </div>
+
+            {/* Results Viewer Panel */}
+            {showResultsPanel && lastCommandResult && (
+                <div className="glass rounded-xl overflow-hidden border border-cyan-500/20">
+                    <div className="flex items-center justify-between px-4 py-3 bg-cyan-900/30 border-b border-cyan-500/20">
+                        <div className="flex items-center gap-3">
+                            <span className="text-cyan-400">👁️</span>
+                            <span className="text-sm font-mono font-bold text-cyan-400">
+                                RESULTADOS: {lastCommandResult.type?.toUpperCase()}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded text-xs ${lastCommandResult.success ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                                {lastCommandResult.success ? '✓ ÉXITO' : '✗ ERROR'}
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => setShowResultsPanel(false)}
+                            className="text-gray-400 hover:text-white text-xl"
+                        >
+                            ×
+                        </button>
+                    </div>
+                    <div className="p-4 max-h-96 overflow-y-auto bg-gray-900/50">
+                        {/* Render based on data type */}
+                        {lastCommandResult.data && (
+                            <div className="space-y-3">
+                                {/* If data has items array (files, programs, etc) */}
+                                {Array.isArray(lastCommandResult.data.items || lastCommandResult.data.files || lastCommandResult.data.programs || lastCommandResult.data.threats) && (
+                                    <div>
+                                        <p className="text-cyan-400 text-sm mb-2">
+                                            📋 {(lastCommandResult.data.items || lastCommandResult.data.files || lastCommandResult.data.programs || lastCommandResult.data.threats || []).length} elementos encontrados:
+                                        </p>
+                                        <div className="space-y-1 max-h-60 overflow-y-auto">
+                                            {(lastCommandResult.data.items || lastCommandResult.data.files || lastCommandResult.data.programs || lastCommandResult.data.threats || []).slice(0, 50).map((item, i) => (
+                                                <div key={i} className="flex items-center gap-2 p-2 bg-black/30 rounded text-sm">
+                                                    <span className="text-lg">{item.is_dir ? '📁' : item.suspicious ? '⚠️' : item.severity === 'critical' ? '🔴' : item.severity === 'high' ? '🟠' : '📄'}</span>
+                                                    <div className="flex-1 overflow-hidden">
+                                                        <p className={`truncate ${item.suspicious ? 'text-amber-400' : item.severity ? 'text-red-400' : 'text-white'}`}>
+                                                            {item.name || item.title || item.url || JSON.stringify(item).slice(0, 60)}
+                                                        </p>
+                                                        {item.path && <p className="text-xs text-gray-500 truncate">{item.path}</p>}
+                                                        {item.size_formatted && <p className="text-xs text-gray-400">{item.size_formatted}</p>}
+                                                        {item.description && <p className="text-xs text-red-300">{item.description}</p>}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Show key metrics */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    {Object.entries(lastCommandResult.data).map(([key, value]) => {
+                                        if (typeof value !== 'object' && key !== 'success') {
+                                            return (
+                                                <div key={key} className="bg-black/30 p-3 rounded">
+                                                    <p className="text-xs text-gray-400 capitalize">{key.replace(/_/g, ' ')}</p>
+                                                    <p className={`font-bold ${key.includes('count') && value > 0 ? 'text-amber-400' : 'text-white'}`}>
+                                                        {String(value)}
+                                                    </p>
+                                                </div>
+                                            )
+                                        }
+                                        return null
+                                    })}
+                                </div>
+
+                                {/* Browser history special view */}
+                                {lastCommandResult.data.history && (
+                                    <div>
+                                        <p className="text-cyan-400 text-sm mb-2">🌐 Historial de Navegación:</p>
+                                        {['chrome', 'edge', 'firefox'].map(browser => (
+                                            lastCommandResult.data.history[browser]?.length > 0 && (
+                                                <div key={browser} className="mb-3">
+                                                    <p className="text-sm text-gray-400 mb-1 capitalize">{browser}:</p>
+                                                    {lastCommandResult.data.history[browser].slice(0, 10).map((entry, i) => (
+                                                        <div key={i} className="text-xs text-gray-300 p-1 bg-black/20 rounded mb-1 truncate">
+                                                            {entry.title || entry.url}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )
+                                        ))}
+                                        {lastCommandResult.data.history.suspicious_sites?.length > 0 && (
+                                            <div className="mt-2 p-2 bg-red-900/30 rounded border border-red-500/30">
+                                                <p className="text-red-400 text-sm">⚠️ Sitios Sospechosos:</p>
+                                                {lastCommandResult.data.history.suspicious_sites.map((site, i) => (
+                                                    <p key={i} className="text-xs text-red-300 truncate">{site.url}</p>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Network connections special view */}
+                                {lastCommandResult.data.connections && (
+                                    <div>
+                                        <p className="text-cyan-400 text-sm mb-2">🔌 Conexiones de Red:</p>
+                                        <div className="max-h-40 overflow-y-auto">
+                                            {lastCommandResult.data.connections.slice(0, 20).map((conn, i) => (
+                                                <div key={i} className="flex justify-between text-xs p-1 bg-black/20 rounded mb-1">
+                                                    <span className="text-gray-300">{conn.process}</span>
+                                                    <span className="text-gray-400">{conn.local} → {conn.remote}</span>
+                                                    <span className={conn.status === 'ESTABLISHED' ? 'text-green-400' : 'text-gray-500'}>{conn.status}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Device Info Card */}
             <div className="glass rounded-xl p-5">
