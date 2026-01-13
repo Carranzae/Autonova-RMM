@@ -601,23 +601,14 @@ export default function AgentDetail() {
                             onClick={() => executeCommand('view_recycle_bin', 'Analizando Papelera')}
                             disabled={!isOnline || isExecuting}
                         />
-                        <button
-                            onClick={() => {
-                                const path = prompt('Ruta a explorar (ej: C:\\Users):', 'C:\\Users')
-                                if (path) {
-                                    executeCommandWithParams('browse_files', { path }, `Explorando ${path}`)
-                                }
-                            }}
+                        <CommandButton
+                            id="browse_files"
+                            label="Explorar Archivos"
+                            icon="📂"
+                            color="blue"
+                            onClick={() => executeCommand('browse_files', 'Explorando Archivos del Usuario')}
                             disabled={!isOnline || isExecuting}
-                            className="relative p-3 sm:p-4 rounded-xl text-center transition-all duration-200 
-                                bg-gradient-to-br from-cyan-600 to-cyan-700 hover:from-cyan-500 hover:to-cyan-600 
-                                border border-cyan-500/30
-                                disabled:opacity-50 disabled:cursor-not-allowed 
-                                active:scale-95 shadow-lg min-h-[80px] sm:min-h-[100px]"
-                        >
-                            <span className="text-xl sm:text-2xl block mb-1 sm:mb-2">📂</span>
-                            <span className="text-xs sm:text-sm font-medium block leading-tight">Explorar Archivos</span>
-                        </button>
+                        />
                     </div>
                 </div>
 
