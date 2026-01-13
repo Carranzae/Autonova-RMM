@@ -16,7 +16,8 @@ export const useAgentStore = create((set, get) => ({
     error: null,
     socket: null,
     commandProgress: {},
-    commandResults: {},  // Store command results
+    commandResults: {},  // Store command results by command_id
+    lastResult: null,    // Store most recent result for quick access
 
     // Socket connection
     connectSocket: () => {
@@ -56,14 +57,28 @@ export const useAgentStore = create((set, get) => ({
         })
 
         socket.on('command_result', (data) => {
-            console.log('Command result received:', data)
-            // Store the result
+            console.log('📊 Command result received:', data)
+            console.log('📊 Result data content:', JSON.stringify(data.data, null, 2))
+
+            // Store the full result with command_id as key
             set((state) => ({
                 commandResults: {
                     ...state.commandResults,
-                    [data.command_id]: data
+                    [data.command_id]: {
+                        ...data,
+                        receivedAt: new Date().toISOString()
+                    }
+                },
+                // Also store as lastResult for easy access
+                lastResult: {
+                    command_id: data.command_id,
+                    agent_id: data.agent_id,
+                    success: data.success,
+                    data: data.data,
+                    timestamp: data.timestamp
                 }
             }))
+
             // Refresh agent list
             get().fetchAgents()
         })

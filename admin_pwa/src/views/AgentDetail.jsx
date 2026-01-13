@@ -18,6 +18,7 @@ export default function AgentDetail() {
         selectedAgent,
         commandProgress,
         commandResults,
+        lastResult,       // Add lastResult
         fetchAgent,
         sendCommand,
         clearSelection
@@ -31,8 +32,9 @@ export default function AgentDetail() {
     const [isExecuting, setIsExecuting] = useState(false)
     const [currentCommandId, setCurrentCommandId] = useState(null)
     const [currentCommandType, setCurrentCommandType] = useState(null)
-    const [lastCommandResult, setLastCommandResult] = useState(null)  // Store full result data
+    const [lastCommandResult, setLastCommandResult] = useState(null)
     const [showResultsPanel, setShowResultsPanel] = useState(false)
+    const [selectedItems, setSelectedItems] = useState({})  // Track items marked for deletion
 
     useEffect(() => {
         fetchAgent(agentId)
@@ -99,6 +101,21 @@ export default function AgentDetail() {
             setCurrentCommandType(null)
         }
     }, [commandResults, currentCommandId, currentCommandType])
+
+    // Sync lastResult from store to show in Results Panel
+    useEffect(() => {
+        if (lastResult && lastResult.data) {
+            console.log('🔄 Syncing lastResult from store:', lastResult)
+            setLastCommandResult({
+                type: lastResult.command_id?.split('_')[1] || 'result',
+                data: lastResult.data,
+                timestamp: lastResult.timestamp,
+                success: lastResult.success !== false
+            })
+            setShowResultsPanel(true)
+            setSelectedItems({})  // Reset selections
+        }
+    }, [lastResult])
 
     // Subscribe to command completion events
     useEffect(() => {
@@ -753,12 +770,32 @@ export default function AgentDetail() {
                                 {lastCommandResult.success ? '✓ ÉXITO' : '✗ ERROR'}
                             </span>
                         </div>
-                        <button
-                            onClick={() => setShowResultsPanel(false)}
-                            className="text-gray-400 hover:text-white text-xl"
-                        >
-                            ×
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {Object.keys(selectedItems).length > 0 && (
+                                <button
+                                    onClick={async () => {
+                                        const toDelete = Object.entries(selectedItems)
+                                            .filter(([_, marked]) => marked)
+                                            .map(([path]) => path)
+                                        if (toDelete.length > 0 && confirm(`¿Eliminar ${toDelete.length} archivos marcados?`)) {
+                                            for (const path of toDelete) {
+                                                await sendCommand(agentId, 'delete_file', { file_path: path })
+                                            }
+                                            addLog(`🗑️ Eliminando ${toDelete.length} archivos...`, 'warning')
+                                        }
+                                    }}
+                                    className="px-3 py-1 bg-red-600 hover:bg-red-500 rounded text-xs font-bold"
+                                >
+                                    🗑️ Eliminar Marcados ({Object.values(selectedItems).filter(v => v).length})
+                                </button>
+                            )}
+                            <button
+                                onClick={() => setShowResultsPanel(false)}
+                                className="text-gray-400 hover:text-white text-xl"
+                            >
+                                ×
+                            </button>
+                        </div>
                     </div>
                     <div className="p-4 max-h-96 overflow-y-auto bg-gray-900/50">
                         {/* Render based on data type */}
@@ -767,21 +804,48 @@ export default function AgentDetail() {
                                 {/* If data has items array (files, programs, etc) */}
                                 {Array.isArray(lastCommandResult.data.items || lastCommandResult.data.files || lastCommandResult.data.programs || lastCommandResult.data.threats) && (
                                     <div>
-                                        <p className="text-cyan-400 text-sm mb-2">
-                                            📋 {(lastCommandResult.data.items || lastCommandResult.data.files || lastCommandResult.data.programs || lastCommandResult.data.threats || []).length} elementos encontrados:
-                                        </p>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <p className="text-cyan-400 text-sm">
+                                                📋 {(lastCommandResult.data.items || lastCommandResult.data.files || lastCommandResult.data.programs || lastCommandResult.data.threats || []).length} elementos encontrados
+                                            </p>
+                                            <p className="text-xs text-gray-400">Click para marcar ❌ = eliminar</p>
+                                        </div>
                                         <div className="space-y-1 max-h-60 overflow-y-auto">
-                                            {(lastCommandResult.data.items || lastCommandResult.data.files || lastCommandResult.data.programs || lastCommandResult.data.threats || []).slice(0, 50).map((item, i) => (
-                                                <div key={i} className="flex items-center gap-2 p-2 bg-black/30 rounded text-sm">
-                                                    <span className="text-lg">{item.is_dir ? '📁' : item.suspicious ? '⚠️' : item.severity === 'critical' ? '🔴' : item.severity === 'high' ? '🟠' : '📄'}</span>
+                                            {(lastCommandResult.data.items || lastCommandResult.data.files || lastCommandResult.data.programs || lastCommandResult.data.threats || []).slice(0, 100).map((item, i) => (
+                                                <div
+                                                    key={i}
+                                                    onClick={() => {
+                                                        const path = item.path || item.name
+                                                        setSelectedItems(prev => ({
+                                                            ...prev,
+                                                            [path]: !prev[path]
+                                                        }))
+                                                    }}
+                                                    className={`flex items-center gap-2 p-2 rounded text-sm cursor-pointer transition-all
+                                                        ${selectedItems[item.path || item.name]
+                                                            ? 'bg-red-900/50 border border-red-500'
+                                                            : 'bg-black/30 hover:bg-black/50'
+                                                        }`}
+                                                >
+                                                    <span className="text-lg">
+                                                        {selectedItems[item.path || item.name] ? '❌' :
+                                                            item.is_dir ? '📁' :
+                                                                item.suspicious ? '⚠️' :
+                                                                    item.severity === 'critical' ? '🔴' :
+                                                                        item.severity === 'high' ? '🟠' : '📄'}
+                                                    </span>
                                                     <div className="flex-1 overflow-hidden">
-                                                        <p className={`truncate ${item.suspicious ? 'text-amber-400' : item.severity ? 'text-red-400' : 'text-white'}`}>
+                                                        <p className={`truncate ${selectedItems[item.path || item.name] ? 'text-red-400 line-through' : item.suspicious ? 'text-amber-400' : item.severity ? 'text-red-400' : 'text-white'}`}>
                                                             {item.name || item.title || item.url || JSON.stringify(item).slice(0, 60)}
                                                         </p>
                                                         {item.path && <p className="text-xs text-gray-500 truncate">{item.path}</p>}
                                                         {item.size_formatted && <p className="text-xs text-gray-400">{item.size_formatted}</p>}
                                                         {item.description && <p className="text-xs text-red-300">{item.description}</p>}
+                                                        {item.version && <p className="text-xs text-gray-400">v{item.version}</p>}
                                                     </div>
+                                                    <span className="text-xs text-gray-500">
+                                                        {selectedItems[item.path || item.name] ? '❌' : '✓'}
+                                                    </span>
                                                 </div>
                                             ))}
                                         </div>
